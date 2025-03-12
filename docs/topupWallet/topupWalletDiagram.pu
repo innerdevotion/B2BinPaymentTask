@@ -1,0 +1,143 @@
+@startuml
+
+participant User as "User"
+participant "Personal Account UI" as PAUI
+participant "Personal Account" as PA
+database "Database" as db
+participant "B2BINPAY" as B2BP
+
+title: Top up a wallet by B2BinPay
+
+User -> PAUI: Get a list of wallets to top up
+activate User
+activate PAUI
+PAUI -> PA: Get a list of wallets
+activate PA
+PA -> B2BP: Get wallets list (GET [base]/wallet/)
+activate B2BP
+B2BP --> PA: Return wallets list
+deactivate B2BP
+
+alt Error message
+    PA --x PAUI: Display error message
+    PAUI --x User: Show error message
+else Success
+    PA --> PAUI: Return wallets list
+    deactivate PA
+    PAUI --> User: Display wallets list
+    deactivate PAUI
+end
+
+User -> PAUI: Select a source wallet
+activate PAUI
+PAUI --> User: Show top-up form
+User -> PAUI: Choose destination wallet
+PAUI --> User: Show available wallets for transfer
+User -> PAUI: Select destination wallet
+User -> PAUI: Enter transfer amount
+
+opt Enterprise wallet transaction
+    User -> PAUI: Select a fee mode
+    PAUI -> PA: Get fee amount
+    activate PA
+    PA -> B2BP: Precalculate fee (POST [base]/payout/calculate/)
+    activate B2BP
+    B2BP --> PA: Return fee precalculation
+
+    alt Error message
+        PA --x PAUI: Display error message
+        PAUI --x User: Show error message
+    else Success
+        PA --> PAUI: Return fee amount
+        deactivate PA
+        PAUI --> User: Display fee amount
+        deactivate PAUI
+    end
+end
+
+User -> PAUI: Confirm top-up details
+PAUI -> PAUI: Validate input data
+
+alt Validation failed
+    PAUI --x User: Show validation error
+    opt User corrects details
+        User -> PAUI: Resubmit top-up form
+    end
+else Validation succeeded
+    PAUI -> PA: Initiate transfer request
+    activate PA
+    PA -> PA: Create transfer
+    PA -> db: Store transfer details
+    activate db
+    db --> PA: Result
+    deactivate db
+    PA --> PAUI: Return transfer details
+    deactivate PA
+    PAUI --> User: Show transfer confirmation
+    deactivate PAUI
+end
+
+User -> PAUI: Confirm and initiate transfer
+activate PAUI
+PAUI -> PA: Execute transfer
+activate PA
+PA -> B2BP: Send payout request (POST [base]/payout/)
+activate B2BP
+B2BP --> PA: Return payout response
+
+alt Error
+    PA -> db: Update payout status (failed)
+    activate db
+    db --> PA: Result
+    deactivate db
+    PA --x PAUI: Show error message
+    PAUI --x User: Display failed status
+else Success
+    PA -> db: Update payout status (pending)
+    activate db
+    db --> PA: Result
+    deactivate db
+    PA --> PAUI: Show successful request
+    deactivate PA
+    PAUI --> User: Display successful (pending) status
+    deactivate PAUI
+end
+
+B2BP -> B2BP: Monitor blockchain transaction
+B2BP -> B2BP: Confirm blockchain confirmations
+B2BP -> B2BP: Generate callback notification
+
+loop Callback sent (X times)
+    B2BP -> PA: Send callback with transfer result
+    deactivate B2BP
+    activate PA
+    PA -> PA: Validate callback (HMAC)
+    
+    alt Invalid callback
+        PA -> db: Mark transaction invalid
+        activate db
+        db --> PA: Result
+        deactivate db
+        PA --x PAUI: Show error status
+        activate PAUI
+        PAUI --x User: Display failed payout
+        deactivate PAUI
+    else Valid callback
+        PA -> db: Update user balance
+        activate db
+        db --> PA: Result
+        deactivate db
+        PA -> db: Update payout status (confirmed)
+        activate db
+        db --> PA: Result
+        deactivate db
+        PA --> PAUI: Send updated balance
+        deactivate PA
+        activate PAUI
+        PAUI --> User: Display successful payout & balance update
+        deactivate PAUI
+    end
+end
+
+deactivate User
+@enduml

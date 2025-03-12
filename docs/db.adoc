@@ -1,0 +1,63 @@
+== Database Tables
+
+=== Users Table
+[cols="3,3,6"]
+|===
+| *Column Name* | *Data Type* | *Description*
+| id            | string      | User unique identifier
+| name          | string      | User full name
+| email         | string      | User email address
+| created_at    | timestamp   | Record creation date and time
+| updated_at    | timestamp   | Record update date and time
+|===
+
+=== Wallets Table
+[cols="3,3,6"]
+|===
+| *Column Name* | *Data Type* | *Description*
+| id            | string      | Wallet unique identifier for the wallet
+| user_id       | string      | User unique identifier
+| currency_id   | string      | Wallet currency unique identifier
+| balance       | string      | Current wallet balance 
+| created_at    | timestamp   | Record creation date and time
+| updated_at    | timestamp   | Record update date and time
+|===
+
+=== Transfers Table
+[cols="3,3,6"]
+|===
+| *Column Name*         | *Data Type* | *Description*
+| id                    | string      | Transfer unique identifier
+| user_id               | string      | User unique identifier
+| source_wallet_id      | string      | Wallet unique identifier for replenishment
+| destination_wallet_id | string      | Wallet unique identifier from which to top up
+| amount                | string      | Transfer amount
+| fee_mode              | boolean     | Fee mode (only for enterprise wallets)
+| fee_amount            | string      | Fee amount (only for enterprise wallets)
+| status                | string     a| Transfer status:
+
+* `confirmed` - confirmed by user
+* `waiting` - waiting for user confirmation
+
+| created_at            | timestamp   | Record creation date and time
+| updated_at            | timestamp   | Record update date and time
+|===
+
+=== Payouts Table
+[cols="3,3,6"]
+|===
+| *Column Name*         | *Data Type* | *Description*
+| id                    | string      | Payout unique identifier 
+| user_id               | string      | User unique identifier
+| source_wallet_id      | string      | Wallet unique identifier for replenishment
+| destination_wallet_id | string      | Wallet unique identifier from which to top up
+| amount                | string      | Payout amount
+| status                | string     a| Payout status:
+
+* `confirmed` - Successfully completed
+* `failed` - Error during execution
+* `pending` - In the process of execution
+
+| created_at           | timestamp    | Record creation date and time
+| updated_at           | timestamp    | Record update date and time
+|===

@@ -1,0 +1,103 @@
+== Topping up a Wallet via B2BinPay
+
+=== Description
+
+Description of the logic of topping up a wallet balance via B2BinPay
+
+=== Process diagram
+
+[plantuml,format="png"]
+----
+include::topupWalletDiagram.pu[]
+----
+
+=== Scenario: Top-up a wallet via B2BinPay
+
+*Getting wallet list*
+[arabic]
+. The User initiates the top-up process by requesting a list of available wallets.
+. The Personal Account User Interface (PAUI) sends this request to the Personal Account (PA).
+. The PA system sends B2BinPay using the API: https://docs.b2binpay.com/api-guide/wallet-methods#request[GET base/wallet/] to get a list of wallets.
+. B2BinPay responds with the list of wallets.
+. The PA system sends the list to PAUI.
+. PAUI displays the available wallets to the User.
+[upperalpha]
+.. If an error occurs while getting the list of wallets, the PA system returns an error message to PAUI.
+[loweralpha]
+... PAUI displays the error to the User and the process stops.
+
+*Selecting the wallet and transfer details*
+[arabic]
+. The User selects a source wallet and begins the top-up process.
+. PAUI displays the top-up form.
+. The User selects a destination wallet for a transfer.
+. PAUI displays the list of wallets available for making the transfer.
+. The User selects the destination wallet.
+. The User enters the transfer amount.
+[upperalpha]
+.. If the source wallet is an Enterprise wallet, the User selects a fee mode.
+[loweralpha]
+... PAUI sends the fee calculation request to the PA system.
+... the PA system sends a precalculation request to B2BinPay using the API: https://docs.b2binpay.com/api-guide/payout-methods#request-2[POST base/payout/calculate/].
+... B2BinPay processes the request and returns the precalculated fee amount.
+[upperroman]
+... If an error occurs while getting the fee, the PA system returns an error message to PAUI.
+[lowerroman]
+.... PAUI displays the error message to the User.
+[upperroman]
+... If the fee calculation is successful, the PA system sends the fee amount to PAUI.
+[lowerroman]
+.... PAUI displays the fee details to the User.
+. The User submits the top-up details.
+. PAUI performs input validation.
+[upperalpha]
+.. If validation fails, PAUI returns an error message to the User.
+[loweralpha]
+... The User can correct the form and resubmit it.
+[upperalpha]
+.. If validation succeeds, PAUI sends the transfer request to the PA system.
+
+*Creating the transfer request*
+[arabic]
+. The PA system processes the request to create the transfer.
+. The PA system stores the transfer details in the Database.
+. After the transaction data is successfully saved, the PA system sends the transfer details back to PAUI.
+. PAUI displays the transfer confirmation details to the User.
+
+*Executing the transfer*
+[arabic]
+. The User confirms and initiates the transfer.
+. PAUI sends a request to perform the transfer to the PA system.
+. The PA system processes the transfer and sends a payout request to B2BinPay using the API: https://docs.b2binpay.com/api-guide/payout-methods#request-1[POST base/payout/].
+. B2BinPay processes the request and returns a payout response to the PA system.
+[upperalpha]
+.. If an error occurs, the PA system updates the Database with a failed payout status.
+[loweralpha]
+... PAUI displays the failed status to the User.
+[upperalpha]
+.. If the request is successful, the PA system updates the Database with a pending payout status.
+[loweralpha]
+... PAUI informs the User that the transfer request has been successfully sent and is awaiting confirmation.
+
+*Blockchain transaction monitoring and callback processing*
+[arabic]
+. B2BinPay monitors the blockchain transaction for the payout.
+. After receiving the required confirmations, B2BinPay generates a callback notification.
+. B2BinPay sends the callback with the transfer result to the PA system.
+. The PA system verifies the callback using HMAC-SHA256 signature authentication.
+[upperalpha]
+.. If the callback is invalid, the PA system updates the Database marking the transaction as failed.
+[loweralpha]
+... PAUI informs the User that the payout has failed.
+
+[upperalpha]
+.. If the callback is valid, the PA system updates the User's account balance in the Database.
+[loweralpha]
+... The PA system updates the payout status in the Database to confirmed.
+... The PA system sends updated balance information to PAUI.
+... PAUI displays the successful payout status and the updated balance to the User.
+
+*Process result*
+[arabic]
+. The User sees the status of a successful transaction and the updated balance.
+. The process is complete.

@@ -1,0 +1,23 @@
+:toc: left
+= Documentation
+
+:sectnums:
+:sectnumlevels: 4
+:toc-title: Table of contents
+
+== Introuction
+
+This specification contains a description of the technical implementation of the integration of the Personal Account system with the B2BinPay payment system.
+
+== Links
+|===
+| Document | Link
+
+| B2BinPayAPI
+| https://docs.b2binpay.com/api-guide/api-overview[B2BinPayAPI]
+|===
+
+include::db.adoc[]
+
+include::topupWallet/topupWallet.adoc[]
+
